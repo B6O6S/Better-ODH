@@ -1,0 +1,1 @@
+loadstring(game:HttpGet('https://raw.githubusercontent.com/B6O6S/Better-ODH/refs/heads/main/Auto%20Updater.lua'))()
