@@ -1106,101 +1106,6 @@ local RunService = game:GetService("RunService")
 
 local odh_shared_plugins = odh_shared_plugins -- make sure your shared plugin object exists
 
-local shared = odh_shared_plugins
-local section = shared.AddSection("Theme Changer")
-
--- Predefined color options
-local colorOptions = {
-    Black = Color3.fromRGB(0,0,0),
-    White = Color3.fromRGB(255,255,255),
-    Red = Color3.fromRGB(255,0,0),
-    Green = Color3.fromRGB(0,255,0),
-    Blue = Color3.fromRGB(0,0,255),
-    Yellow = Color3.fromRGB(255,255,0),
-    Magenta = Color3.fromRGB(255,0,255),
-    Purple = Color3.fromRGB(128,0,128),
-    Pink = Color3.fromRGB(255,105,180),
-    Orange = Color3.fromRGB(255,165,0),
-    Cyan = Color3.fromRGB(0,255,255),
-    Gold = Color3.fromRGB(255,215,0),
-    Ocean = Color3.fromRGB(0,128,200)
-}
-
-local primaryColor = nil
-local secondaryColor = nil
-local originalColors = {} -- store original GUI colors
-
--- Dropdown lists
-local colorNames = {}
-for name,_ in pairs(colorOptions) do
-    table.insert(colorNames, name)
-end
-table.sort(colorNames)
-
--- Pickers
-section:AddDropdown("Choose Primary Color", colorNames, function(selected)
-    primaryColor = colorOptions[selected]
-end)
-
-section:AddDropdown("Choose Secondary Color", colorNames, function(selected)
-    secondaryColor = colorOptions[selected]
-end)
-
--- Apply Theme Button
-section:AddButton("Apply Theme", function()
-    if not primaryColor and not secondaryColor then
-        shared.Notify("Please select a primary or secondary color first.", 3)
-        return
-    end
-
-    pcall(function()
-        local gui = gethui and gethui()
-        if gui then
-            for _,element in ipairs(gui:GetDescendants()) do
-                if element:IsA("GuiObject") then
-                    if not originalColors[element] then
-                        originalColors[element] = {
-                            Background = element.BackgroundColor3,
-                            Border = element.BorderColor3
-                        }
-                    end
-                    if primaryColor then
-                        element.BackgroundColor3 = primaryColor
-                    end
-                    if secondaryColor then
-                        element.BorderColor3 = secondaryColor
-                    end
-                end
-                if element:IsA("UIGradient") and primaryColor then
-                    element.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, primaryColor),
-                        ColorSequenceKeypoint.new(1, secondaryColor or primaryColor)
-                    })
-                end
-            end
-        end
-    end)
-
-    shared.Notify("Theme Applied!", 1)
-end)
-
--- Reset Theme Button
-section:AddButton("Reset Theme", function()
-    pcall(function()
-        for element, props in pairs(originalColors) do
-            if element then
-                if props.Background then element.BackgroundColor3 = props.Background end
-                if props.Border then element.BorderColor3 = props.Border end
-            end
-        end
-    end)
-    shared.Notify("Theme Reset to Original", 1)
-end)
-
-
-
-
-
 
 -- Store original sky if it exists
 local Lighting = game:GetService("Lighting")
@@ -1615,7 +1520,6 @@ privacyTab:AddToggle("Hide My Avatar", function(state)
     updateThumbnails()
 end)
 
-
 local speedSection = odh_shared_plugins.AddSection("Speed Glitch")
 
 local Players = game:GetService("Players")
@@ -1630,6 +1534,7 @@ local Camera = Workspace.CurrentCamera
 -- STATE
 ----------------------------------------------------------------
 
+local uiEnabled = false
 local enabled = false
 local sideSpeed = 150
 local moveInput = 0
@@ -1747,8 +1652,10 @@ local emotes = {
 -- UI CONTROLS (ORDERED)
 ----------------------------------------------------------------
 
--- 1. TOGGLE UI
+-- 1. MASTER TOGGLE (UI ENABLE)
 speedSection:AddToggle("Enable Speed Glitch UI", function(v)
+    uiEnabled = v
+
     if v then
         createToggleButton()
     else
@@ -1761,7 +1668,7 @@ speedSection:AddSlider("Side Speed", 10, 1000, sideSpeed, function(v)
     sideSpeed = v
 end)
 
--- 3. TOGGLE SIZE (REAL TIME)
+-- 3. TOGGLE SIZE (LIVE)
 speedSection:AddSlider("Toggle Size", 40, 150, toggleSize, function(v)
     toggleSize = v
 
@@ -1771,7 +1678,7 @@ speedSection:AddSlider("Toggle Size", 40, 150, toggleSize, function(v)
     end
 end)
 
--- Emote dropdown
+-- Emotes
 speedSection:AddDropdown("Select Emote", {
     "Moonwalk",
     "Happier Jump",
@@ -1788,7 +1695,7 @@ speedSection:AddTextBox("Custom Emote ID", function(text)
 end)
 
 ----------------------------------------------------------------
--- DRAGGABLE TOGGLE UI
+-- DRAGGABLE UI
 ----------------------------------------------------------------
 
 local screenGui
@@ -1858,6 +1765,18 @@ function destroyToggleButton()
     end
     enabled = false
 end
+
+----------------------------------------------------------------
+-- AUTO RESTORE AFTER REJOIN/RESPAWN
+----------------------------------------------------------------
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+
+    if uiEnabled then
+        createToggleButton()
+    end
+end)
 
 -- =============================
 -- CREDITS
