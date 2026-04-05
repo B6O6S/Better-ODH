@@ -1616,330 +1616,248 @@ privacyTab:AddToggle("Hide My Avatar", function(state)
 end)
 
 
-
-
-local shared = odh_shared_plugins
-
--- Create a new section
-local gunSoundSection = shared.AddSection("Gun Sound Changer")
-
--- Sound options (default first)
-local sounds = {
-    "Default|10209803",
-    "Meow|7148585764",
-    "Laser|8561500387",
-    "Pew|2216910282",
-    "BoomHeadshot|7551341361",
-    "Bruh|6349641063",
-    "Fart|8551016315",
-    "تفل على لويز (3RQ)|78710014998615",
-    "خودلك دي|76578568305727",
-    "Zrigha|97655350152777",
-    "Custom|0" -- Placeholder for textbox input
-}
-
-local selectedSoundId = "rbxassetid://10209803" -- default selected
-local customEnabled = false
-local customTextboxId = nil -- Store user input for custom ID
-local lastSelected = "Default" -- Track dropdown selection
-local connections = {}
+local speedSection = odh_shared_plugins.AddSection("Speed Glitch")
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
--- Function to layer custom sound
-local function layerSound(origSound)
-    if not selectedSoundId then return end
-    origSound.Volume = 0
-
-    if connections[origSound] then
-        connections[origSound]:Disconnect()
-    end
-
-    connections[origSound] = origSound.Played:Connect(function()
-        local custom = Instance.new("Sound")
-        custom.SoundId = selectedSoundId
-        custom.Volume = 1
-        custom.PlayOnRemove = true
-        custom.Parent = origSound.Parent
-        custom:Destroy()
-    end)
-end
-
--- Function to apply custom sound to all gunshots
-local function applySounds()
-    if not customEnabled then return end
-    local containers = {LocalPlayer.Backpack, LocalPlayer.Character}
-    for _, container in ipairs(containers) do
-        if container then
-            for _, obj in ipairs(container:GetDescendants()) do
-                if obj:IsA("Sound") and obj.Name == "Gunshot" then
-                    layerSound(obj)
-                end
-            end
-        end
-    end
-end
-
--- Heartbeat loop to handle new guns
-RunService.Heartbeat:Connect(function()
-    if customEnabled then
-        applySounds()
-    end
-end)
-
--- Toggle for enabling/disabling custom sounds
-gunSoundSection:AddToggle("Enable Custom Sound", function(bool)
-    customEnabled = bool
-    if bool then
-        applySounds()
-    end
-end)
-
--- TextBox for custom SoundId
-gunSoundSection:AddTextBox("Custom SoundId", function(text)
-    if text and text ~= "" then
-        if not string.find(text, "rbxassetid://") then
-            customTextboxId = "rbxassetid://" .. text
-        else
-            customTextboxId = text
-        end
-        -- If the last selected dropdown option is Custom, update immediately
-        if lastSelected == "Custom" then
-            selectedSoundId = customTextboxId
-            applySounds()
-        end
-    end
-end)
-
--- Dropdown to select the custom sound
-local dropdownOptions = {}
-for _, data in ipairs(sounds) do
-    local name = string.match(data, "(.-)|%d+")
-    table.insert(dropdownOptions, name)
-end
-
-local dropdown = gunSoundSection:AddDropdown("Select Sound", dropdownOptions, function(selected)
-    lastSelected = selected -- track selection
-    if selected == "Custom" then
-        selectedSoundId = customTextboxId -- may be nil until user types
-    else
-        for _, data in ipairs(sounds) do
-            local name, id = string.match(data, "(.-)|(%d+)")
-            if name == selected then
-                selectedSoundId = "rbxassetid://" .. id
-                break
-            end
-        end
-    end
-    applySounds() -- Apply immediately when changed
-end)
-
--- Set initial dropdown selection to Default
-dropdown.Select("Default")
-
-
-
-local shared = odh_shared_plugins
-
--- Plugin Section
-local speedSection = shared.AddSection("Legit speedglitch")
-
-local LocalPlayer = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
--- Variables
-local sideSpeed = 150
-local buttonSize = 50
-local emoteEnabled = false
-local selectedEmoteId = nil
-local customEmoteEnabled = false
-local emoteButton
-local moveInput = 0
-local isJumping = false
-
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local HRP = Character:WaitForChild("HumanoidRootPart")
+local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- Predefined emotes
-local emotes = {
-    ["Moonwalk"] = "79127989560307",
-    ["Yungblud - Happier Jump"] = "15610015346",
-    ["Baby Queen - Bouncy Twirl"] = "14353423348",
-    ["Flex Walk"] = "15506506103"
-}
+----------------------------------------------------------------
+-- STATE
+----------------------------------------------------------------
 
--- ======= Character & Jump Handling =======
-local function setupCharacter(char)
+local enabled = false
+local sideSpeed = 150
+local moveInput = 0
+local isJumping = false
+local selectedEmoteId
+local toggleSize = 80
+
+local Character
+local Humanoid
+local HRP
+
+----------------------------------------------------------------
+-- CHARACTER BINDING
+----------------------------------------------------------------
+
+local function bindCharacter(char)
     Character = char
-    Humanoid = Character:WaitForChild("Humanoid")
-    HRP = Character:WaitForChild("HumanoidRootPart")
+    Humanoid = char:WaitForChild("Humanoid")
+    HRP = char:WaitForChild("HumanoidRootPart")
+
     isJumping = false
 
-    Humanoid.Jumping:Connect(function() isJumping = true end)
+    Humanoid.Jumping:Connect(function()
+        isJumping = true
+    end)
+
     Humanoid.StateChanged:Connect(function(_, state)
         if state == Enum.HumanoidStateType.Landed then
             isJumping = false
         end
     end)
 end
-setupCharacter(Character)
-LocalPlayer.CharacterAdded:Connect(setupCharacter)
 
--- ======= Keyboard input =======
+bindCharacter(LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait())
+LocalPlayer.CharacterAdded:Connect(bindCharacter)
+
+----------------------------------------------------------------
+-- INPUT
+----------------------------------------------------------------
+
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.A then moveInput = -1
-    elseif input.KeyCode == Enum.KeyCode.D then moveInput = 1
-    end
-end)
-UserInputService.InputEnded:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then moveInput = 0
+    if input.KeyCode == Enum.KeyCode.A then
+        moveInput = -1
+    elseif input.KeyCode == Enum.KeyCode.D then
+        moveInput = 1
     end
 end)
 
--- ======= Play Emote =======
-local function playEmote(assetId)
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    local success, err = pcall(function()
-        humanoid:PlayEmoteAndGetAnimTrackById(assetId)
+UserInputService.InputEnded:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then
+        moveInput = 0
+    end
+end)
+
+----------------------------------------------------------------
+-- EMOTE SYSTEM
+----------------------------------------------------------------
+
+local function playEmote(id)
+    if not Character then return end
+    local hum = Character:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    local ok = pcall(function()
+        hum:PlayEmoteAndGetAnimTrackById(id)
     end)
-    if not success then
+
+    if not ok then
         local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://"..assetId
-        humanoid:LoadAnimation(anim):Play()
+        anim.AnimationId = "rbxassetid://" .. id
+
+        local track = hum:LoadAnimation(anim)
+        if track then track:Play() end
     end
 end
 
--- ======= Create Emote Button =======
-local function createEmoteButton()
-    if emoteButton then return end
+----------------------------------------------------------------
+-- MOVEMENT LOOP
+----------------------------------------------------------------
 
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SpeedGlitchGUI"
+RunService.Heartbeat:Connect(function()
+    if not enabled then return end
+    if not Character or not Humanoid or not HRP then return end
+    if not isJumping then return end
+
+    local dir = moveInput
+
+    if dir == 0 and Humanoid.MoveDirection.Magnitude > 0 then
+        local cf = CFrame.new(Vector3.new(), Camera.CFrame.LookVector)
+        dir = (cf.RightVector:Dot(Humanoid.MoveDirection) > 0) and 1 or -1
+    end
+
+    if dir ~= 0 then
+        local right = Camera.CFrame.RightVector
+        local flat = Vector3.new(right.X, 0, right.Z).Unit
+
+        HRP.Velocity = flat * (dir * sideSpeed) + Vector3.new(0, HRP.Velocity.Y, 0)
+    end
+end)
+
+----------------------------------------------------------------
+-- EMOTES
+----------------------------------------------------------------
+
+local emotes = {
+    ["Moonwalk"] = "79127989560307",
+    ["Happier Jump"] = "15610015346",
+    ["Bouncy Twirl"] = "14353423348",
+    ["Flex Walk"] = "15506506103"
+}
+
+----------------------------------------------------------------
+-- UI CONTROLS (ORDERED)
+----------------------------------------------------------------
+
+-- 1. TOGGLE UI
+speedSection:AddToggle("Enable Speed Glitch UI", function(v)
+    if v then
+        createToggleButton()
+    else
+        destroyToggleButton()
+    end
+end)
+
+-- 2. SIDE SPEED
+speedSection:AddSlider("Side Speed", 10, 1000, sideSpeed, function(v)
+    sideSpeed = v
+end)
+
+-- 3. TOGGLE SIZE (REAL TIME)
+speedSection:AddSlider("Toggle Size", 40, 150, toggleSize, function(v)
+    toggleSize = v
+
+    if toggleButton then
+        toggleButton.Size = UDim2.new(0, toggleSize, 0, toggleSize)
+        toggleButton.Position = UDim2.new(0.5, -(toggleSize/2), 0.7, 0)
+    end
+end)
+
+-- Emote dropdown
+speedSection:AddDropdown("Select Emote", {
+    "Moonwalk",
+    "Happier Jump",
+    "Bouncy Twirl",
+    "Flex Walk"
+}, function(choice)
+    selectedEmoteId = emotes[choice]
+end)
+
+speedSection:AddTextBox("Custom Emote ID", function(text)
+    if text and text ~= "" then
+        selectedEmoteId = text
+    end
+end)
+
+----------------------------------------------------------------
+-- DRAGGABLE TOGGLE UI
+----------------------------------------------------------------
+
+local screenGui
+local toggleButton
+
+local function updateButtonVisual()
+    if not toggleButton then return end
+
+    if enabled then
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    else
+        toggleButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    end
+end
+
+function createToggleButton()
+    if screenGui or toggleButton then return end
+
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "SpeedGlitchUI"
     screenGui.ResetOnSpawn = false
     screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-    emoteButton = Instance.new("TextButton")
-    emoteButton.Size = UDim2.new(0, buttonSize, 0, buttonSize)
-    emoteButton.Position = UDim2.new(0, 50, 0, 200)
-    emoteButton.BackgroundColor3 = Color3.fromRGB(100, 40, 40)
-    emoteButton.Text = "Speed Glitch"
-    emoteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    emoteButton.TextScaled = true
-    emoteButton.AutoButtonColor = false
-    emoteButton.Parent = screenGui
+    toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, toggleSize, 0, toggleSize)
+    toggleButton.Position = UDim2.new(0.5, -(toggleSize/2), 0.7, 0)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.TextScaled = true
+    toggleButton.Text = "Speed Glitch"
+    toggleButton.BorderSizePixel = 0
+    toggleButton.AutoButtonColor = false
+    toggleButton.Parent = screenGui
 
-    -- Draggable
-    local dragging, dragInput, mousePos, framePos = false
-    emoteButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            mousePos = input.Position
-            framePos = emoteButton.Position
-        end
-    end)
-    emoteButton.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - mousePos
-            emoteButton.Position = UDim2.new(0, framePos.X.Offset + delta.X, 0, framePos.Y.Offset + delta.Y)
-        end
-    end)
-    emoteButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+    -- Thin black outline
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1
+    stroke.Color = Color3.fromRGB(0, 0, 0)
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = toggleButton
+
+    -- Square corners
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 0)
+    corner.Parent = toggleButton
+
+    toggleButton.Active = true
+    toggleButton.Draggable = true
+
+    toggleButton.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        updateButtonVisual()
+
+        if enabled and selectedEmoteId then
+            playEmote(selectedEmoteId)
         end
     end)
 
-    -- Button click
-    emoteButton.MouseButton1Click:Connect(function()
-        emoteEnabled = not emoteEnabled
-        if emoteEnabled then
-            emoteButton.BackgroundColor3 = Color3.fromRGB(40, 100, 40)
-            if selectedEmoteId then
-                playEmote(selectedEmoteId)
-            end
-        else
-            emoteButton.BackgroundColor3 = Color3.fromRGB(100, 40, 40)
-        end
-    end)
+    updateButtonVisual()
 end
 
--- ======= Apply Speed =======
-RunService.Heartbeat:Connect(function()
-    if not emoteEnabled or not isJumping then return end
-
-    local inputDir = moveInput
-    if inputDir == 0 and Humanoid.MoveDirection.Magnitude > 0 then
-        local camCF = CFrame.new(Vector3.new(), Camera.CFrame.LookVector)
-        inputDir = (camCF.RightVector:Dot(Humanoid.MoveDirection) > 0) and 1 or -1
+function destroyToggleButton()
+    if screenGui then
+        screenGui:Destroy()
+        screenGui = nil
+        toggleButton = nil
     end
-    if inputDir ~= 0 then
-        local camRight = Vector3.new(Camera.CFrame.RightVector.X, 0, Camera.CFrame.RightVector.Z).Unit
-        HRP.Velocity = camRight * (inputDir * sideSpeed) + Vector3.new(0, HRP.Velocity.Y, 0)
-    end
-end)
-
--- =====================
--- SpeedGlitch GUI ( gato ik you are copying this 😭 )
--- =====================
-
--- Toggle to show button
-speedSection:AddToggle("Speedglitch Button", function(bool)
-    if bool then
-        createEmoteButton()
-    elseif emoteButton then
-        emoteButton:Destroy()
-        emoteButton = nil
-        emoteEnabled = false
-    end
-end)
-
--- Slider: Side speed
-speedSection:AddSlider("Side Speed", 10, 1000, sideSpeed, function(val)
-    sideSpeed = val
-end)
-
--- Slider: Button size
-speedSection:AddSlider("Button Size", 30, 150, buttonSize, function(val)
-    buttonSize = val
-    if emoteButton then
-        emoteButton.Size = UDim2.new(0, buttonSize, 0, buttonSize)
-    end
-end)
-
--- Dropdown: Emotes
-local emoteDropdown = speedSection:AddDropdown("Select Emote", {"Moonwalk","Yungblud - Happier Jump","Baby Queen - Bouncy Twirl","Flex Walk","Custom"}, function(selected)
-    if selected == "Custom" then
-        customEmoteEnabled = true
-        selectedEmoteId = nil
-    else
-        customEmoteEnabled = false
-        selectedEmoteId = emotes[selected]
-    end
-end)
-
--- Textbox: Custom emote ID
-speedSection:AddTextBox("Custom Emote ID", function(text)
-    if text ~= "" then
-        selectedEmoteId = text
-        customEmoteEnabled = true
-    end
-end)
-
+    enabled = false
+end
 
 -- =============================
 -- CREDITS
