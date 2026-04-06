@@ -1519,7 +1519,7 @@ privacyTab:AddToggle("Hide My Avatar", function(state)
 
     updateThumbnails()
 end)
-local speedSection = odh_shared_plugins.AddSection("Speed Glitch")
+local speedSection = odh_shared_plugins.AddSection("Legit Speed Glitch")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
