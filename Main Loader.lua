@@ -1767,19 +1767,6 @@ speedSection:AddTextBox("Custom Emote ID", function(text)
 end)
 
 ----------------------------------------------------------------
--- RESPAWN FIX
-----------------------------------------------------------------
-
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(2)
-
-    if uiEnabled then
-        destroyToggleButton()
-        createToggleButton()
-    end
-end)
-
-----------------------------------------------------------------
 -- AUTO UI RECOVERY LOOP
 ----------------------------------------------------------------
 
