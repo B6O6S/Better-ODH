@@ -1,0 +1,125 @@
+local shared = odh_shared_plugins  
+
+-- Create a new section  
+local knifeSoundSection = shared.AddSection("Knife Sound Changer")  
+
+-- Sound options (default first)  
+local sounds = {  
+    "Default|142247768",  
+    "Meow|7148585764",  
+    "Laser|8561500387",  
+    "Pew|2216910282",  
+    "BoomHeadshot|7551341361",  
+    "Bruh|6349641063",  
+    "Fart|8551016315",  
+    "تفل على لويز (3RQ)|78710014998615",  
+    "خودلك دي|76578568305727",  
+    "Zrigha|97655350152777",  
+    "miskeen (B6O6S)|71767902510649",  
+    "Custom|0"  
+}  
+
+local selectedSoundId = "rbxassetid://142247768" -- default knife sound  
+local customEnabled = false  
+local customTextboxId = nil  
+local lastSelected = "Default"  
+local connections = {}  
+
+local Players = game:GetService("Players")  
+local RunService = game:GetService("RunService")  
+local LocalPlayer = Players.LocalPlayer  
+
+-- Function to layer custom sound  
+local function layerSound(origSound)  
+    if not selectedSoundId then return end  
+    origSound.Volume = 0  
+
+    if connections[origSound] then  
+        connections[origSound]:Disconnect()  
+    end  
+
+    connections[origSound] = origSound.Played:Connect(function()  
+        local custom = Instance.new("Sound")  
+        custom.SoundId = selectedSoundId  
+        custom.Volume = 1  
+        custom.PlayOnRemove = true  
+        custom.Parent = origSound.Parent  
+        custom:Destroy()  
+    end)  
+end  
+
+-- Apply to knife sounds (name = "Kill")  
+local function applySounds()  
+    if not customEnabled then return end  
+
+    local containers = {LocalPlayer.Backpack, LocalPlayer.Character}  
+
+    for _, container in ipairs(containers) do  
+        if container then  
+            for _, obj in ipairs(container:GetDescendants()) do  
+                if obj:IsA("Sound") and obj.Name == "Kill" then  
+                    layerSound(obj)  
+                end  
+            end  
+        end  
+    end  
+end  
+
+-- Loop  
+RunService.Heartbeat:Connect(function()  
+    if customEnabled then  
+        applySounds()  
+    end  
+end)  
+
+-- Toggle  
+knifeSoundSection:AddToggle("Enable Custom Knife Sound", function(bool)  
+    customEnabled = bool  
+    if bool then  
+        applySounds()  
+    end  
+end)  
+
+-- Custom textbox  
+knifeSoundSection:AddTextBox("Custom SoundId", function(text)  
+    if text and text ~= "" then  
+        if not string.find(text, "rbxassetid://") then  
+            customTextboxId = "rbxassetid://" .. text  
+        else  
+            customTextboxId = text  
+        end  
+
+        if lastSelected == "Custom" then  
+            selectedSoundId = customTextboxId  
+            applySounds()  
+        end  
+    end  
+end)  
+
+-- Dropdown setup  
+local dropdownOptions = {}  
+for _, data in ipairs(sounds) do  
+    local name = string.match(data, "(.-)|%d+")  
+    table.insert(dropdownOptions, name)  
+end  
+
+local dropdown = knifeSoundSection:AddDropdown("Select Sound", dropdownOptions, function(selected)  
+    lastSelected = selected  
+
+    if selected == "Custom" then  
+        selectedSoundId = customTextboxId  
+    else  
+        for _, data in ipairs(sounds) do  
+            local name, id = string.match(data, "(.-)|(%d+)")  
+            if name == selected then  
+                selectedSoundId = "rbxassetid://" .. id  
+                break  
+            end  
+        end  
+    end  
+
+    applySounds()  
+end)  
+
+-- Default selection  
+dropdown.Select("Default")
