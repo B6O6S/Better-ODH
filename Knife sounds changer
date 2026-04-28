@@ -6,15 +6,8 @@ local knifeSoundSection = shared.AddSection("Knife Sound Changer")
 -- Sound options (default first)  
 local sounds = {  
     "Default|142247768",  
-    "Meow|7148585764",  
-    "Laser|8561500387",  
-    "Pew|2216910282",  
-    "BoomHeadshot|7551341361",  
-    "Bruh|6349641063",  
-    "Fart|8551016315",  
-    "تفل على لويز (3RQ)|78710014998615",  
-    "خودلك دي|76578568305727",  
-    "Zrigha|97655350152777",  
+    "tom scream|133946057163378",  
+    "Cat laugh|136958794247658",  
     "miskeen (B6O6S)|71767902510649",  
     "Custom|0"  
 }  
