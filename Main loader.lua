@@ -1930,7 +1930,7 @@ end)
 dropdown.Select("Default")
 
 local shared = odh_shared_plugins
-shared.load_from_github_url("/B6O6S/Better-ODH/blob/main/Part 2")
+shared.load_from_github_url("/B6O6S/Better-ODH/refs/heads/main/Part 2")
 
 
 -- =============================
