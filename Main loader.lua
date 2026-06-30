@@ -269,7 +269,7 @@ end)
 -- FONTS
 -- =============================
 local fonts = {
-    ["SourceSans (Original)"] = Enum.Font.SourceSans,
+    ["SourceSansBold (Original)"] = Enum.Font.SourceSansBold,
     ["Gotham"] = Enum.Font.Gotham,
     ["Arcade"] = Enum.Font.Arcade,
     ["Arial"] = Enum.Font.Arial,
@@ -281,10 +281,10 @@ local fonts = {
     ["Legacy"] = Enum.Font.Legacy
 }
 
-local selectedFont = "SourceSans (Original)"
+local selectedFont = "SourceSansBold (Original)"
 
 ui_tab:AddDropdown("Select Font", {
-    "SourceSans (Original)","Gotham","Arcade","Arial","ArialBold","Cartoon","Fantasy","Highway","Code","Legacy"
+    "SourceSansBold (Original)","Gotham","Arcade","Arial","ArialBold","Cartoon","Fantasy","Highway","Code","Legacy"
 }, function(option)
     selectedFont = option
     for _, gui in ipairs(LocalPlayer.PlayerGui:GetDescendants()) do
