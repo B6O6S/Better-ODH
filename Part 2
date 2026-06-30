@@ -280,9 +280,8 @@ local section = shared.AddSection("Streamer Mode")
 local CoreGui = game:GetService("CoreGui")
 
 local enabled = false
-local connection
+local connections = {}
 local originals = setmetatable({}, { __mode = "k" })
-local cached = setmetatable({}, { __mode = "k" })
 
 --// --- Core Logic --- \\--
 
@@ -309,10 +308,7 @@ end
 
 local function Save(inst, prop)
     local t = originals[inst]
-    if not t then
-        t = {}
-        originals[inst] = t
-    end
+    if not t then t = {}; originals[inst] = t end
     if t[prop] == nil then
         local ok, value = pcall(function() return inst[prop] end)
         if ok then t[prop] = value end
@@ -321,61 +317,46 @@ end
 
 local function ApplyHiddenProperties(inst)
     if inst:IsA("GuiObject") then
-        inst.BackgroundTransparency = 1
-        inst.BorderSizePixel = 0
+        Save(inst, "BackgroundTransparency"); inst.BackgroundTransparency = 1
+        Save(inst, "BorderSizePixel"); inst.BorderSizePixel = 0
     end
     if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
-        inst.TextTransparency = 1
-        inst.TextStrokeTransparency = 1
+        Save(inst, "TextTransparency"); inst.TextTransparency = 1
+        Save(inst, "TextStrokeTransparency"); inst.TextStrokeTransparency = 1
     end
     if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
-        inst.ImageTransparency = 1
-        inst.AutoButtonColor = false
+        Save(inst, "ImageTransparency"); inst.ImageTransparency = 1
+        Save(inst, "AutoButtonColor"); inst.AutoButtonColor = false
     end
-    if inst:IsA("VideoFrame") then inst.VideoTransparency = 1 end
-    if inst:IsA("UIStroke") then inst.Transparency = 1 end
-    if inst:IsA("UIGradient") then inst.Transparency = NumberSequence.new(1) end
-    if inst:IsA("ScrollingFrame") then inst.ScrollBarImageTransparency = 1 end
+    if inst:IsA("VideoFrame") then Save(inst, "VideoTransparency"); inst.VideoTransparency = 1 end
+    if inst:IsA("UIStroke") then Save(inst, "Transparency"); inst.Transparency = 1 end
+    if inst:IsA("UIGradient") then Save(inst, "Transparency"); inst.Transparency = NumberSequence.new(1) end
+    if inst:IsA("ScrollingFrame") then Save(inst, "ScrollBarImageTransparency"); inst.ScrollBarImageTransparency = 1 end
 end
 
 local function Hide(inst)
-    if cached[inst] or ShouldIgnore(inst) then return end
-    cached[inst] = true
-
-    if inst:IsA("GuiObject") then Save(inst, "BackgroundTransparency"); Save(inst, "BorderSizePixel") end
-    if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then Save(inst, "TextTransparency"); Save(inst, "TextStrokeTransparency") end
-    if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then Save(inst, "ImageTransparency"); Save(inst, "AutoButtonColor") end
-    if inst:IsA("VideoFrame") then Save(inst, "VideoTransparency") end
-    if inst:IsA("UIStroke") then Save(inst, "Transparency") end
-    if inst:IsA("UIGradient") then Save(inst, "Transparency") end
-    if inst:IsA("ScrollingFrame") then Save(inst, "ScrollBarImageTransparency") end
-
+    if ShouldIgnore(inst) then return end
+    
     ApplyHiddenProperties(inst)
-end
-
-local function Reapply()
-    for inst in pairs(cached) do
-        if not inst or not inst.Parent or ShouldIgnore(inst) then
-            cached[inst] = nil
-        else
-            ApplyHiddenProperties(inst)
-        end
-    end
+    
+    -- Listener: Only re-hides if the object changes properties (Zero loop usage)
+    local conn = inst.Changed:Connect(function()
+        if enabled then ApplyHiddenProperties(inst) end
+    end)
+    table.insert(connections, conn)
 end
 
 local function Restore()
-    enabled = false
-    if connection then connection:Disconnect(); connection = nil end
-
     for inst, props in pairs(originals) do
-        if inst and inst.Parent then
+        if inst then
             for prop, value in pairs(props) do
                 pcall(function() inst[prop] = value end)
             end
         end
     end
     table.clear(originals)
-    table.clear(cached)
+    for _, conn in pairs(connections) do conn:Disconnect() end
+    table.clear(connections)
 end
 
 local function Apply()
@@ -388,33 +369,23 @@ local function Apply()
     Hide(ui)
     for _, obj in ipairs(ui:GetDescendants()) do Hide(obj) end
 
-    connection = ui.DescendantAdded:Connect(function(obj)
-        if enabled then task.defer(Hide, obj) end
+    -- Handle new objects appearing
+    local conn = ui.DescendantAdded:Connect(function(obj)
+        if enabled then Hide(obj) end
     end)
-
-    task.spawn(function()
-        while enabled do
-            Reapply()
-            task.wait(0.1)
-        end
-    end)
-end
-
-local function SetState(state)
-    if enabled == state then return end
-    enabled = state
-    if enabled then Apply() else Restore() end
+    table.insert(connections, conn)
 end
 
 --// --- UI Construction --- \\--
 
 section:AddToggle("Streamer Mode", function(bool)
-    SetState(bool)
+    enabled = bool
+    if enabled then Apply() else Restore() end
 end)
 
 section:AddKeybind("Unhide Keybind", "", function()
-    SetState(not enabled)
+    enabled = not enabled
+    if enabled then Apply() else Restore() end
 end)
 
--- Corrected Credit Addition
-section:AddLabel('Credits To: <font color="rgb(255,0,255)">not_.gato (@HeyyCaf) - Owner of the feature</font>')
+section:AddLabel('Credits To: <font color="rgb(255,0,255)">not_.gato (@HeyyCaf)</font>')
