@@ -342,3 +342,6 @@ do
 
     section:AddLabel('Credits To: not_.gato (@HeyyCaf)')
 end
+
+local shared = odh_shared_plugins
+shared.load_from_github_url("/B6O6S/Better-ODH/refs/heads/main/CODM%20Guns%20v2.lua")
