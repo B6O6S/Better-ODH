@@ -1,395 +1,351 @@
-local shared = odh_shared_plugins  
+-- ODH Plugin: Combined Modules
+if not odh_shared_plugins then
+    warn("ODH Shared Plugins environment not found! Load the main hub first.")
+    return
+end
 
--- Create a new section  
-local knifeSoundSection = shared.AddSection("Knife Sound Changer")  
+local shared = odh_shared_plugins
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
 
--- Sound options (default first)  
-local sounds = {  
-    "Default|142247768",  
-    "Tom scream|133946057163378",  
-    "Cat laugh|136958794247658",  
-    "miskeen (B6O6S)|71767902510649",
-    "يلعن ابو لعبك (3RQ)|89850487492275",  
-    "FAH|137533276939300",
-    "Arabic kid|84433159756169",
-    "Custom|0"  
-}  
+--------------------------------------------------------------------------------
+-- 1. Knife Sound Changer
+--------------------------------------------------------------------------------
+do
+    local knifeSoundSection = shared.AddSection("Knife Sound Changer")  
 
-local selectedSoundId = "rbxassetid://142247768" -- default knife sound  
-local customEnabled = false  
-local customTextboxId = nil  
-local lastSelected = "Default"  
-local connections = {}  
+    local sounds = {  
+        "Default|142247768",  
+        "Tom scream|133946057163378",  
+        "Cat laugh|136958794247658",  
+        "miskeen (B6O6S)|71767902510649",
+        "يلعن ابو لعبك (3RQ)|89850487492275",  
+        "FAH|137533276939300",
+        "Arabic kid|84433159756169",
+        "Custom|0"  
+    }  
 
-local Players = game:GetService("Players")  
-local RunService = game:GetService("RunService")  
-local LocalPlayer = Players.LocalPlayer  
+    local selectedSoundId = "rbxassetid://142247768"
+    local customEnabled = false  
+    local customTextboxId = nil  
+    local lastSelected = "Default"  
+    local connections = {}  
 
--- Function to layer custom sound  
-local function layerSound(origSound)  
-    if not selectedSoundId then return end  
-    origSound.Volume = 0  
+    local function layerSound(origSound)  
+        if not selectedSoundId then return end  
+        origSound.Volume = 0  
 
-    if connections[origSound] then  
-        connections[origSound]:Disconnect()  
+        if connections[origSound] then  
+            connections[origSound]:Disconnect()  
+        end  
+
+        connections[origSound] = origSound.Played:Connect(function()  
+            local custom = Instance.new("Sound")  
+            custom.SoundId = selectedSoundId  
+            custom.Volume = 1  
+            custom.PlayOnRemove = true  
+            custom.Parent = origSound.Parent  
+            custom:Destroy()  
+        end)  
     end  
 
-    connections[origSound] = origSound.Played:Connect(function()  
-        local custom = Instance.new("Sound")  
-        custom.SoundId = selectedSoundId  
-        custom.Volume = 1  
-        custom.PlayOnRemove = true  
-        custom.Parent = origSound.Parent  
-        custom:Destroy()  
-    end)  
-end  
+    local function applySounds()  
+        if not customEnabled then return end  
+        local containers = {LocalPlayer.Backpack, LocalPlayer.Character}  
 
--- Apply to knife sounds (name = "Kill")  
-local function applySounds()  
-    if not customEnabled then return end  
-
-    local containers = {LocalPlayer.Backpack, LocalPlayer.Character}  
-
-    for _, container in ipairs(containers) do  
-        if container then  
-            for _, obj in ipairs(container:GetDescendants()) do  
-                if obj:IsA("Sound") and obj.Name == "Kill" then  
-                    layerSound(obj)  
+        for _, container in ipairs(containers) do  
+            if container then  
+                for _, obj in ipairs(container:GetDescendants()) do  
+                    if obj:IsA("Sound") and obj.Name == "Kill" then  
+                        layerSound(obj)  
+                    end  
                 end  
             end  
         end  
     end  
-end  
 
--- Loop  
-RunService.Heartbeat:Connect(function()  
-    if customEnabled then  
-        applySounds()  
-    end  
-end)  
-
--- Toggle  
-knifeSoundSection:AddToggle("Enable Custom Knife Sound", function(bool)  
-    customEnabled = bool  
-    if bool then  
-        applySounds()  
-    end  
-end)  
-
--- Custom textbox  
-knifeSoundSection:AddTextBox("Custom SoundId", function(text)  
-    if text and text ~= "" then  
-        if not string.find(text, "rbxassetid://") then  
-            customTextboxId = "rbxassetid://" .. text  
-        else  
-            customTextboxId = text  
-        end  
-
-        if lastSelected == "Custom" then  
-            selectedSoundId = customTextboxId  
+    RunService.Heartbeat:Connect(function()  
+        if customEnabled then  
             applySounds()  
         end  
-    end  
-end)  
+    end)  
 
--- Dropdown setup  
-local dropdownOptions = {}  
-for _, data in ipairs(sounds) do  
-    local name = string.match(data, "(.-)|%d+")  
-    table.insert(dropdownOptions, name)  
-end  
+    knifeSoundSection:AddToggle("Enable Custom Knife Sound", function(bool)  
+        customEnabled = bool  
+        if bool then applySounds() end  
+    end)  
 
-local dropdown = knifeSoundSection:AddDropdown("Select Sound", dropdownOptions, function(selected)  
-    lastSelected = selected  
+    knifeSoundSection:AddTextBox("Custom SoundId", function(text)  
+        if text and text ~= "" then  
+            if not string.find(text, "rbxassetid://") then  
+                customTextboxId = "rbxassetid://" .. text  
+            else  
+                customTextboxId = text  
+            end  
 
-    if selected == "Custom" then  
-        selectedSoundId = customTextboxId  
-    else  
-        for _, data in ipairs(sounds) do  
-            local name, id = string.match(data, "(.-)|(%d+)")  
-            if name == selected then  
-                selectedSoundId = "rbxassetid://" .. id  
-                break  
+            if lastSelected == "Custom" then  
+                selectedSoundId = customTextboxId  
+                applySounds()  
             end  
         end  
+    end)  
+
+    local dropdownOptions = {}  
+    for _, data in ipairs(sounds) do  
+        local name = string.match(data, "(.-)|%d+")  
+        table.insert(dropdownOptions, name)  
     end  
 
-    applySounds()  
-end)  
+    local dropdown = knifeSoundSection:AddDropdown("Select Sound", dropdownOptions, function(selected)  
+        lastSelected = selected  
+        if selected == "Custom" then  
+            selectedSoundId = customTextboxId  
+        else  
+            for _, data in ipairs(sounds) do  
+                local name, id = string.match(data, "(.-)|(%d+)")  
+                if name == selected then  
+                    selectedSoundId = "rbxassetid://" .. id  
+                    break  
+                end  
+            end  
+        end  
+        applySounds()  
+    end)  
 
--- Default selection  
-dropdown.Select("Default")
-
-local shared = odh_shared_plugins  
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Renamed the section
-local section = shared.AddSection("Multi Hat Giver")  
-
--- State Management
-local isEnabled = false
-local customIds = {Slot1 = 0, Slot2 = 0, Slot3 = 0}
-local selectedIds = {Slot1 = 0, Slot2 = 0, Slot3 = 0}
-local activeHats = {Slot1 = nil, Slot2 = nil, Slot3 = nil}
-
--- Updated Hat List with Extreme Headphones
-local hatOptions = {  
-    "None|0",
-    "Dominus Astra|162067148",  
-    "Valkyrie|1365767",  
-    "Clockwork|1235488",
-    "Extreme Headphones|96079043",
-    "Fiery Horns|215718515",
-    "Frozen Horns|74891470",
-    "Poisoned Horns|1744060292",
-    "Custom|0"  
-}
-
---// --- Utility Functions --- \\--
-
-local function weldParts(part0, part1, c0, c1)
-    local weld = Instance.new("Weld")
-    weld.Part0, weld.Part1 = part0, part1
-    weld.C0, weld.C1 = c0, c1
-    weld.Parent = part0
-    return weld
+    pcall(function() dropdown.Select("Default") end)
 end
 
-local function findAttachment(rootPart, name)
-    for _, descendant in pairs(rootPart:GetDescendants()) do
-        if descendant:IsA("Attachment") and descendant.Name == name then
-            return descendant
-        end
+--------------------------------------------------------------------------------
+-- 2. Multi Hat Giver
+--------------------------------------------------------------------------------
+do
+    local section = shared.AddSection("Multi Hat Giver")  
+    local isEnabled = false
+    local customIds = {Slot1 = 0, Slot2 = 0, Slot3 = 0}
+    local selectedIds = {Slot1 = 0, Slot2 = 0, Slot3 = 0}
+    local activeHats = {Slot1 = nil, Slot2 = nil, Slot3 = nil}
+
+    local hatOptions = {  
+        "None|0",
+        "Dominus Astra|162067148",  
+        "Valkyrie|1365767",  
+        "Clockwork|1235488",
+        "Extreme Headphones|96079043",
+        "Fiery Horns|215718515",
+        "Frozen Horns|74891470",
+        "Poisoned Horns|1744060292",
+        "Custom|0"  
+    }
+
+    local function weldParts(part0, part1, c0, c1)
+        local weld = Instance.new("Weld")
+        weld.Part0, weld.Part1 = part0, part1
+        weld.C0, weld.C1 = c0, c1
+        weld.Parent = part0
+        return weld
     end
-end
 
---// --- Core Logic --- \\--
-
-local function clearSlot(slot)
-    if activeHats[slot] then 
-        activeHats[slot]:Destroy() 
-        activeHats[slot] = nil
-    end
-end
-
-local function applyHat(slot, accessoryId)
-    clearSlot(slot)
-
-    -- Don't spawn if toggle is off or no ID
-    if not isEnabled or accessoryId == 0 then return end
-    
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("Head") then return end
-
-    local success, objects = pcall(function() return game:GetObjects("rbxassetid://" .. tostring(accessoryId)) end)
-    if not success or #objects == 0 then return end
-    
-    local accessory = objects[1]
-    local handle = accessory:FindFirstChild("Handle")
-    
-    if handle then
-        -- Physics & Collision Fixes
-        handle.CanCollide = false
-        handle.CanTouch = false
-        handle.CanQuery = false 
-        handle.Massless = true  
-
-        accessory.Parent = character
-        local attachment = handle:FindFirstChildOfClass("Attachment")
-        
-        if attachment then
-            local parentAttachment = findAttachment(character.Head, attachment.Name)
-            if parentAttachment then
-                weldParts(character.Head, handle, parentAttachment.CFrame, attachment.CFrame)
+    local function findAttachment(rootPart, name)
+        for _, descendant in pairs(rootPart:GetDescendants()) do
+            if descendant:IsA("Attachment") and descendant.Name == name then
+                return descendant
             end
-        else
-            weldParts(character.Head, handle, CFrame.new(0, 0.5, 0), accessory.AttachmentPoint)
         end
-        activeHats[slot] = accessory
     end
+
+    local function clearSlot(slot)
+        if activeHats[slot] then 
+            activeHats[slot]:Destroy() 
+            activeHats[slot] = nil
+        end
+    end
+
+    local function applyHat(slot, accessoryId)
+        clearSlot(slot)
+        if not isEnabled or accessoryId == 0 then return end
+        
+        local character = LocalPlayer.Character
+        if not character or not character:FindFirstChild("Head") then return end
+
+        local success, objects = pcall(function() return game:GetObjects("rbxassetid://" .. tostring(accessoryId)) end)
+        if not success or #objects == 0 then return end
+        
+        local accessory = objects[1]
+        local handle = accessory:FindFirstChild("Handle")
+        
+        if handle then
+            handle.CanCollide, handle.CanTouch, handle.CanQuery, handle.Massless = false, false, false, true
+            accessory.Parent = character
+            local attachment = handle:FindFirstChildOfClass("Attachment")
+            
+            if attachment then
+                local parentAttachment = findAttachment(character.Head, attachment.Name)
+                if parentAttachment then
+                    weldParts(character.Head, handle, parentAttachment.CFrame, attachment.CFrame)
+                end
+            else
+                weldParts(character.Head, handle, CFrame.new(0, 0.5, 0), accessory.AttachmentPoint)
+            end
+            activeHats[slot] = accessory
+        end
+    end
+
+    local function refreshAllHats()
+        applyHat("Slot1", selectedIds["Slot1"])
+        applyHat("Slot2", selectedIds["Slot2"])
+        applyHat("Slot3", selectedIds["Slot3"])
+    end
+
+    section:AddToggle("Enable Hat Giver", function(bool)  
+        isEnabled = bool  
+        if isEnabled then refreshAllHats() else clearSlot("Slot1"); clearSlot("Slot2"); clearSlot("Slot3") end
+    end)
+
+    local dropdownNames = {}
+    for _, v in ipairs(hatOptions) do table.insert(dropdownNames, string.match(v, "(.-)|")) end
+
+    for i = 1, 3 do
+        local slotName = "Slot" .. i
+        section:AddDropdown("Hat Slot " .. i, dropdownNames, function(selected)
+            if selected == "Custom" then
+                selectedIds[slotName] = customIds[slotName]
+            else
+                for _, data in ipairs(hatOptions) do
+                    local name, id = string.match(data, "(.-)|(%d+)")
+                    if name == selected then
+                        selectedIds[slotName] = tonumber(id)
+                        break
+                    end
+                end
+            end
+            if isEnabled then applyHat(slotName, selectedIds[slotName]) end
+        end)
+
+        section:AddTextBox("Custom ID Slot " .. i, function(text)
+            local id = tonumber(text)
+            if id then
+                customIds[slotName] = id
+                if isEnabled then applyHat(slotName, id) end
+            end
+        end)
+    end
+
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(1.5)
+        if isEnabled then refreshAllHats() end
+    end)
 end
 
-local function refreshAllHats()
-    applyHat("Slot1", selectedIds["Slot1"])
-    applyHat("Slot2", selectedIds["Slot2"])
-    applyHat("Slot3", selectedIds["Slot3"])
-end
+--------------------------------------------------------------------------------
+-- 3. Streamer Mode
+--------------------------------------------------------------------------------
+do
+    local section = shared.AddSection("Streamer Mode")
+    local enabled = false
+    local sConnections = {}
+    local originals = setmetatable({}, { __mode = "k" })
 
---// --- UI Construction --- \\--
-
--- Renamed the toggle
-section:AddToggle("Enable Hat Giver", function(bool)  
-    isEnabled = bool  
-    if isEnabled then
-        refreshAllHats() 
-    else
-        clearSlot("Slot1")
-        clearSlot("Slot2")
-        clearSlot("Slot3")
+    local function GetUI()
+        for _, inst in ipairs(CoreGui:GetDescendants()) do
+            if inst.Name == "@bubbles.elia" then
+                return inst:FindFirstAncestorWhichIsA("LayerCollector")
+            end
+        end
     end
-end)
 
-local dropdownNames = {}
-for _, v in ipairs(hatOptions) do table.insert(dropdownNames, string.match(v, "(.-)|")) end
+    local function ShouldIgnore(inst)
+        local p = inst
+        while p do
+            if p:IsA("CanvasGroup") then return true end
+            if p:IsA("Folder") and (p.Name == "ESP" or p.Name == "Chams") then return true end
+            p = p.Parent
+        end
+        return false
+    end
 
--- Create 3 Slots
-for i = 1, 3 do
-    local slotName = "Slot" .. i
-    
-    section:AddDropdown("Hat Slot " .. i, dropdownNames, function(selected)
-        if selected == "Custom" then
-            selectedIds[slotName] = customIds[slotName]
-        else
-            for _, data in ipairs(hatOptions) do
-                local name, id = string.match(data, "(.-)|(%d+)")
-                if name == selected then
-                    selectedIds[slotName] = tonumber(id)
-                    break
+    local function Save(inst, prop)
+        local t = originals[inst]
+        if not t then t = {}; originals[inst] = t end
+        if t[prop] == nil then
+            local ok, value = pcall(function() return inst[prop] end)
+            if ok then t[prop] = value end
+        end
+    end
+
+    local function ApplyHiddenProperties(inst)
+        if inst:IsA("GuiObject") then
+            Save(inst, "BackgroundTransparency"); inst.BackgroundTransparency = 1
+            Save(inst, "BorderSizePixel"); inst.BorderSizePixel = 0
+        end
+        if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
+            Save(inst, "TextTransparency"); inst.TextTransparency = 1
+            Save(inst, "TextStrokeTransparency"); inst.TextStrokeTransparency = 1
+        end
+        if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
+            Save(inst, "ImageTransparency"); inst.ImageTransparency = 1
+            Save(inst, "AutoButtonColor"); inst.AutoButtonColor = false
+        end
+        if inst:IsA("VideoFrame") then Save(inst, "VideoTransparency"); inst.VideoTransparency = 1 end
+        if inst:IsA("UIStroke") then Save(inst, "Transparency"); inst.Transparency = 1 end
+        if inst:IsA("UIGradient") then Save(inst, "Transparency"); inst.Transparency = NumberSequence.new(1) end
+        if inst:IsA("ScrollingFrame") then Save(inst, "ScrollBarImageTransparency"); inst.ScrollBarImageTransparency = 1 end
+    end
+
+    local function Hide(inst)
+        if ShouldIgnore(inst) then return end
+        ApplyHiddenProperties(inst)
+        local conn = inst.Changed:Connect(function()
+            if enabled then ApplyHiddenProperties(inst) end
+        end)
+        table.insert(sConnections, conn)
+    end
+
+    local function Restore()
+        for inst, props in pairs(originals) do
+            if inst then
+                for prop, value in pairs(props) do
+                    pcall(function() inst[prop] = value end)
                 end
             end
         end
-        
-        if isEnabled then
-            applyHat(slotName, selectedIds[slotName])
+        table.clear(originals)
+        for _, conn in pairs(sConnections) do conn:Disconnect() end
+        table.clear(sConnections)
+    end
+
+    local function Apply()
+        local ui = GetUI()
+        if not ui then
+            if shared.Notify then shared.Notify("UI not found.", 3) end
+            return
         end
+        Hide(ui)
+        for _, obj in ipairs(ui:GetDescendants()) do Hide(obj) end
+
+        local conn = ui.DescendantAdded:Connect(function(obj)
+            if enabled then Hide(obj) end
+        end)
+        table.insert(sConnections, conn)
+    end
+
+    section:AddToggle("Streamer Mode", function(bool)
+        enabled = bool
+        if enabled then Apply() else Restore() end
     end)
 
-    section:AddTextBox("Custom ID Slot " .. i, function(text)
-        local id = tonumber(text)
-        if id then
-            customIds[slotName] = id
-            -- If dropdown is already on "Custom", update live
-            if isEnabled then
-                applyHat(slotName, id)
-            end
-        end
+    section:AddKeybind("Unhide Keybind", "", function()
+        enabled = not enabled
+        if enabled then Apply() else Restore() end
     end)
+
+    section:AddLabel('Credits To: not_.gato (@HeyyCaf)')
 end
 
--- Respawn Support
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1.5)
-    if isEnabled then 
-        refreshAllHats() 
-    end
-end)
-
-local shared = odh_shared_plugins
-local section = shared.AddSection("Streamer Mode")
-local CoreGui = game:GetService("CoreGui")
-
-local enabled = false
-local connections = {}
-local originals = setmetatable({}, { __mode = "k" })
-
---// --- Core Logic --- \\--
-
-local function GetUI()
-    for _, inst in ipairs(CoreGui:GetDescendants()) do
-        if inst.Name == "@bubbles.elia" then
-            return inst:FindFirstAncestorWhichIsA("LayerCollector")
-        end
-    end
-end
-
-local function ShouldIgnore(inst)
-    local p = inst
-    while p do
-        if p:IsA("CanvasGroup") then return true end
-        if p:IsA("Folder") then
-            local n = p.Name
-            if n == "ESP" or n == "Chams" then return true end
-        end
-        p = p.Parent
-    end
-    return false
-end
-
-local function Save(inst, prop)
-    local t = originals[inst]
-    if not t then t = {}; originals[inst] = t end
-    if t[prop] == nil then
-        local ok, value = pcall(function() return inst[prop] end)
-        if ok then t[prop] = value end
-    end
-end
-
-local function ApplyHiddenProperties(inst)
-    if inst:IsA("GuiObject") then
-        Save(inst, "BackgroundTransparency"); inst.BackgroundTransparency = 1
-        Save(inst, "BorderSizePixel"); inst.BorderSizePixel = 0
-    end
-    if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
-        Save(inst, "TextTransparency"); inst.TextTransparency = 1
-        Save(inst, "TextStrokeTransparency"); inst.TextStrokeTransparency = 1
-    end
-    if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
-        Save(inst, "ImageTransparency"); inst.ImageTransparency = 1
-        Save(inst, "AutoButtonColor"); inst.AutoButtonColor = false
-    end
-    if inst:IsA("VideoFrame") then Save(inst, "VideoTransparency"); inst.VideoTransparency = 1 end
-    if inst:IsA("UIStroke") then Save(inst, "Transparency"); inst.Transparency = 1 end
-    if inst:IsA("UIGradient") then Save(inst, "Transparency"); inst.Transparency = NumberSequence.new(1) end
-    if inst:IsA("ScrollingFrame") then Save(inst, "ScrollBarImageTransparency"); inst.ScrollBarImageTransparency = 1 end
-end
-
-local function Hide(inst)
-    if ShouldIgnore(inst) then return end
-    
-    ApplyHiddenProperties(inst)
-    
-    -- Listener: Only re-hides if the object changes properties (Zero loop usage)
-    local conn = inst.Changed:Connect(function()
-        if enabled then ApplyHiddenProperties(inst) end
-    end)
-    table.insert(connections, conn)
-end
-
-local function Restore()
-    for inst, props in pairs(originals) do
-        if inst then
-            for prop, value in pairs(props) do
-                pcall(function() inst[prop] = value end)
-            end
-        end
-    end
-    table.clear(originals)
-    for _, conn in pairs(connections) do conn:Disconnect() end
-    table.clear(connections)
-end
-
-local function Apply()
-    local ui = GetUI()
-    if not ui then
-        shared.Notify("UI not found.", 3)
-        return
-    end
-
-    Hide(ui)
-    for _, obj in ipairs(ui:GetDescendants()) do Hide(obj) end
-
-    -- Handle new objects appearing
-    local conn = ui.DescendantAdded:Connect(function(obj)
-        if enabled then Hide(obj) end
-    end)
-    table.insert(connections, conn)
-end
-
---// --- UI Construction --- \\--
-
-section:AddToggle("Streamer Mode", function(bool)
-    enabled = bool
-    if enabled then Apply() else Restore() end
-end)
-
-section:AddKeybind("Unhide Keybind", "", function()
-    enabled = not enabled
-    if enabled then Apply() else Restore() end
-end)
-
-section:AddLabel('Credits To: <font color="rgb(255,0,255)">not_.gato (@HeyyCaf)</font>')
-
+--------------------------------------------------------------------------------
+-- 4. GitHub Load Extension
+--------------------------------------------------------------------------------
 
 local shared = odh_shared_plugins
 shared.load_from_github_url("/B6O6S/Better-ODH/refs/heads/main/CODM%20Guns.lua")
