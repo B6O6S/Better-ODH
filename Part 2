@@ -389,3 +389,7 @@ section:AddKeybind("Unhide Keybind", "", function()
 end)
 
 section:AddLabel('Credits To: <font color="rgb(255,0,255)">not_.gato (@HeyyCaf)</font>')
+
+
+local shared = odh_shared_plugins
+shared.load_from_github_url("/B6O6S/Better-ODH/refs/heads/main/Part 2")
