@@ -392,4 +392,4 @@ section:AddLabel('Credits To: <font color="rgb(255,0,255)">not_.gato (@HeyyCaf)<
 
 
 local shared = odh_shared_plugins
-shared.load_from_github_url("/B6O6S/Better-ODH/refs/heads/main/Part 2")
+shared.load_from_github_url("/B6O6S/Better-ODH/refs/heads/main/CODM%20Guns.lua")
