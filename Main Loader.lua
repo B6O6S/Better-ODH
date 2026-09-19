@@ -15,7 +15,7 @@ if type(_G[RUNTIME_KEY]) == "table" then
     end
     return
 end
-local tabOK, rootTab = pcall(host.CreateTab, "Better ODH", "//B6O6S/Better-ODH/refs/heads/main/Better%ODH)
+local tabOK, rootTab = pcall(host.CreateTab, "Better ODH", "/B6O6S/Better-ODH/refs/heads/main/Better%20ODH)
 if not tabOK or not rootTab then
     warn("[Better ODH] CreateTab failed: " .. tostring(rootTab))
     return
