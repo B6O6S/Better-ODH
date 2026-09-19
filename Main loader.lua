@@ -1,43 +1,32 @@
 local shared = odh_shared_plugins
+local tab = shared.CreateTab("Better ODH", "/B6O6S/Better-ODH/refs/heads/main/Better%20ODH")
 
-task.spawn(function()
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Customization")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/UI%20%26%20Fonts")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Performance%20%26%20FPS")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Trickshot%20%26%20Movement")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Performance%20Overlay")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Troll%20(FE).lua")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Sky%20changer")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Privacy%20and%20security")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Legit%20Speed%20Glitch")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Gun%20sound%20Changer")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Knife%20sound%20changer")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Multi%20Hat%20Giver")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Streamer%20Mode")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/CODM%20Guns")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Juke%20sound%20effect")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/RTX%20%26%20Graphics")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Death%20Sound%20Effect")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Jump%20Sound%20Effect")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/SprayPaint%20Mods")
-    shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Credits")
-end)
+local custom_section       = tab:AddSection("Customizations", "Active Configuration")
+local ui_section           = tab:AddSection("UI & Fonts")
+local perf_fps_section     = tab:AddSection("Performance & FPS")
+local trickshot_section    = tab:AddSection("Trickshot & Movement")
+local perf_overlay_section = tab:AddSection("Performance Overlay")
+local troll_section        = tab:AddSection("Troll (FE)")
+local sky_section          = tab:AddSection("Sky changer")
+local privacy_section      = tab:AddSection("Privacy and security")
+local speed_glitch_section = tab:AddSection("Legit Speed Glitch")
+local gun_sound_section    = tab:AddSection("Gun sound Changer")
+local knife_sound_section  = tab:AddSection("Knife sound changer")
+local multi_hat_section    = tab:AddSection("Multi Hat Giver")
+local streamer_section     = tab:AddSection("Streamer Mode")
+local codm_guns_section    = tab:AddSection("CODM Guns")
+local juke_section         = tab:AddSection("Juke sound effect")
+local rtx_section          = tab:AddSection("RTX & Graphics")
+local death_sound_section  = tab:AddSection("Death Sound Effect")
+local jump_sound_section   = tab:AddSection("Jump Sound Effect")
+local spraypaint_section   = tab:AddSection("SprayPaint Mods")
+local credits_section      = tab:AddSection("Credits")
 
-task.spawn(function()
-    local CoreGui = game:GetService("CoreGui")
-
-    local target
-    repeat
-        target = CoreGui:FindFirstChild("@bubbles.elia", true)
-        task.wait()
-    until target
-
-    local version = target.Parent:FindFirstChild("Version", true)
-
-    while task.wait(0.1) do
-        if version and (version.Text:find("v3.2", 1, true) or version.Text:find("v3.5", 1, true)) then
-            shared.kick("Malicious Loader Detected.\n\ntrying to crack odh you crack head? get ur real script at discord.gg/overdrivehub")
-            break
-        end
-    end
-end)
+local Players             = game:GetService("Players")
+local Lighting            = game:GetService("Lighting")
+local UIS                 = game:GetService("UserInputService")
+local RunService          = game:GetService("RunService")
+local ReplicatedStorage   = game:GetService("ReplicatedStorage")
+local LocalPlayer         = Players.LocalPlayer
+local Camera              = workspace.CurrentCamera
+local playerGui           = LocalPlayer:WaitForChild("PlayerGui")
