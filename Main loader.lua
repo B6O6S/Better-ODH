@@ -1,7 +1,6 @@
 local shared = odh_shared_plugins
 local tab = shared.CreateTab("Better ODH", "/B6O6S/Better-ODH/refs/heads/main/Better%20ODH")
 
-local custom_section       = tab:AddSection("Customizations", "Active Configuration")
 local ui_section           = tab:AddSection("UI & Fonts")
 local perf_fps_section     = tab:AddSection("Performance & FPS")
 local trickshot_section    = tab:AddSection("Trickshot & Movement")
