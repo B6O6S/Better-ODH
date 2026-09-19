@@ -1,8 +1,6 @@
 local shared = odh_shared_plugins
 local tab = shared.CreateTab("Better ODH", "/B6O6S/Better-ODH/refs/heads/main/Better%20ODH")
 
-local shared = odh_shared_plugins
-
 task.spawn(function()
     shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/Customization")
     shared.load_from_github_url("/B6O6S/Better-Odh-tabs/refs/heads/main/UI%20%26%20Fonts")
