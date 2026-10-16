@@ -5611,7 +5611,7 @@ end }
                 else
 
                     local startTime = tick()
-                    local duration = 0.01
+                    local duration = 0.15
                     
                     while tick() - startTime < duration do
                         if not hrp.Parent or not targetHrp.Parent then break end
