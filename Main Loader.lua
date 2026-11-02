@@ -8,7 +8,7 @@ local RUNTIME_KEY = "BetterODH_ModularLoader_20260919"
 if type(_G[RUNTIME_KEY]) == "table" then
     return
 end
-local tabOK, rootTab = pcall(host.CreateTab, "Better ODH", "/B6O6S/Better-ODH/refs/heads/main/BetterODH%20Logo")
+local tabOK, rootTab = pcall(host.CreateTab, "Better ODH", "/B6O6S/Better-ODH/refs/heads/main/1793621588714")
 if not tabOK or not rootTab then
     return
 end
